@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Find my Public Housing Authority (PHA)</title>
+  <meta name="description"
+        content="Search for your local Public Housing Authority (PHA) by ZIP code." />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- USWDS CSS + init via jsDelivr -->
+  <script src="https://cdn.jsdelivr.net/npm/@uswds/uswds@3/dist/js/uswds-init.min.js"></script>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@uswds/uswds@3/dist/css/uswds.min.css" />
+
+  <style>
+    :root{
+      --hud-blue:#005ea2;
+      --hud-blue-dark:#1a4480;
+      --hud-bg:#f8f9fa;
+      --hud-text:#1b1b1b;
+      --hud-border:#dfe1e2;
+      --radius:14px;
+      --shadow:0 1px 0 rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.06);
+      --muted:#565c65;
+      --focus:#ffbe2e;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--hud-bg);
+      color:var(--hud-text);
+      font-size:19px;
+    }
+    .wrap{
+      max-width:1040px;
+      margin:40px auto;
+      padding:0 16px 40px;
+    }
+    .card{
+      background:#fff;
+      border-radius:var(--radius);
+      border:1px solid var(--hud-border);
+      box-shadow:var(--shadow);
+      padding:24px;
+    }
+    h1{
+      margin:0 0 10px;
+      font-size:30px;
+      font-weight:700;
+    }
+    .lede{
+      margin:0 0 18px;
+      color:var(--muted);
+      line-height:1.55;
+      max-width:46rem;
+      font-size:18px;
+    }
+
+    label{
+      display:block;
+      font-weight:600;
+      font-size:17px;
+      margin-bottom:4px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    input[type="text"],
+    input[type="file"]{
+      flex:1;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--hud-border);
+      font-size:18px;
+      outline:none;
+      background:#fff;
+    }
+    input[type="text"]:focus,
+    input[type="file"]:focus{
+      border-color:var(--hud-blue);
+      box-shadow:0 0 0 4px rgba(255,190,46,.35);
+    }
+
+    button{
+      padding:12px 20px;
+      border-radius:12px;
+      border:1px solid var(--hud-blue);
+      background:var(--hud-blue);
+      color:#fff;
+      font-weight:700;
+      font-size:18px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    button:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+    }
+    button:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 4px rgba(255,190,46,.35);
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:17px;
+    }
+
+    .error{
+      margin-top:10px;
+      border-left:4px solid #b50909;
+      background:#fff5f5;
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:17px;
+    }
+
+    .section-heading{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin:18px 0 8px;
+      font-size:22px;
+      font-weight:700;
+    }
+    .section-icon{
+      font-size:22px;
+    }
+
+    /* Results header */
+    .results-header{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+      margin:18px 0 4px;
+    }
+    #results-heading{
+      margin:0;
+      font-size:21px;
+      font-weight:700;
+    }
+    #result-count{
+      margin:0;
+    }
+    .results-helper{
+      margin:4px 0 14px;
+      max-width:48rem;
+      font-size:16px;
+      color:var(--muted);
+    }
+
+    /* Results list and cards (match counselor tool style) */
+    .results-list{
+      list-style:none !important;
+      padding-left:0;
+      margin:0;
+      display:grid;
+      gap:14px;
+      max-width:720px;   /* or 680px / 700px to taste */
+    }
+
+    .result{
+      border:1px solid var(--hud-border);
+      border-radius:12px;
+      padding:16px 18px;
+      font-size:18px;
+      background:#fff;
+    }
+
+    .result-header{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:8px;
+      margin-bottom:2px;
+      align-items:flex-start;  /* ensures button anchors left reliably */
+    }
+    .result-title{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      min-width:0;
+      flex:1 1 auto;
+      flex-wrap:wrap;
+    }
+
+    .result h3{
+      margin:0;
+      font-size:20px;
+      font-weight:700;
+      color:#1b1b1b;
+      word-break:break-word;
+    }
+
+    .result-address{
+      margin-top:2px;
+      margin-bottom:4px;
+      color:var(--muted);
+      font-size:17px;
+      line-height:1.45;
+    }
+
+    .pill{
+      display:inline-block;
+      background:#eef6ff;
+      color:#0b4778;
+      border:1px solid #cfe6ff;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:14px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .website-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid var(--hud-blue);
+      background:#005ea2;
+      color:#fff;
+      font-weight:700;
+      font-size:18px;
+      text-decoration:none;
+      cursor:pointer;
+      white-space:nowrap;
+      margin-top:2px;
+      align-self:flex-start;
+      flex:0 0 auto;      /* don't stretch */
+      width:auto;         /* size to content */
+      max-width:100%;     /* stay responsive */
+    }
+    .website-btn:hover{
+      filter:brightness(.95);
+    }
+    .website-btn:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 4px rgba(255,190,46,.35);
+    }
+
+    .directions-link{
+      display:inline-flex;
+      align-items:center;
+      margin-top:6px;
+      font-size:16px;
+      color:var(--hud-blue-dark);
+      text-decoration:underline;
+      flex:0 0 auto;
+    }
+    .directions-link:hover,
+    .directions-link:focus{
+      text-decoration:none;
+    }
+
+    .footer{
+      margin-top:16px;
+      font-size:14px;
+      color:var(--muted);
+    }
+
+    .sr-only{
+      position:absolute;
+      width:1px;
+      height:1px;
+      padding:0;
+      margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      border:0;
+      white-space:nowrap;
+    }
+
+    /* Make ZIP box narrower like counseling tool */
+    .zip-input{
+      max-width:260px;
+      flex:0 0 auto;  /* don’t stretch to full row */
+    }
+
+    /* Secret CSV upload in top-right corner, invisible */
+    #csv{
+      position:fixed;
+      top:8px;
+      right:8px;
+      width:40px;
+      height:40px;
+      opacity:0;          /* fully invisible */
+      border:0;
+      padding:0;
+      margin:0;
+      background:transparent;
+      cursor:pointer;
+      z-index:9999;
+    }
+
+    @media (max-width:600px){
+      .wrap{
+        margin-top:24px;
+      }
+      .card{
+        padding:18px;
+      }
+      .row{
+        flex-wrap:wrap;
+      }
+      button{
+        width:100%;
+        justify-content:center;
+      }
+      .website-btn{
+        width:100%;
+        justify-content:center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" id="main">
+    <div class="card">
+      <h1>Find my Public Housing Authority (PHA)</h1>
+      <p class="lede">
+        PHAs manage public housing and Housing Choice Voucher (Section 8) programs, including waiting lists, applications, and questions about eligibility and benefits.
+      </p>
+
+      <!-- CSV upload: hidden dev tool (top-right via CSS) -->
+      <div class="row">
+        <label class="sr-only" for="csv">PHA website CSV</label>
+        <input id="csv" type="file" accept=".csv" />
+      </div>
+
+      <!-- Search section -->
+      <h2 class="section-heading" id="search-heading">
+        Search by ZIP code
+      </h2>
+      <form id="pha-form" novalidate>
+        <label for="q">ZIP code</label>
+        <div class="row">
+          <input
+            id="q"
+            class="zip-input"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]{5}"
+            maxlength="5"
+            placeholder="e.g., 20001"
+            autocomplete="postal-code"
+            aria-describedby="meta msg"
+          />
+          <button id="btn" type="submit">Search</button>
+        </div>
+        <div id="meta" class="muted" aria-live="polite"></div>
+        <div id="msg" aria-live="assertive"></div>
+      </form>
+
+      <!-- Results -->
+      <span id="result-count" class="muted" aria-live="polite"></span>
+      <br><br>
+      <ul id="results" class="results-list"></ul>
+    </div>
+  </main>
+
+  <script>
+    // Search radius (miles) – used for the service call and count text
+    const SEARCH_RADIUS_MILES = 50;
+
+    // HUD eGIS Public Housing Authorities layer (MapServer layer 0)
+    const PHA_QUERY_URL =
+      "https://egis.hud.gov/arcgis/rest/services/gotit/PublicHousing/MapServer/0/query";
+
+    // --- Website lookup (from uploaded CSV) ---
+    let websiteByCode = {};  // PARTICIPANT_CODE -> url
+
+    function isValidUrl(s){
+      if (!s) return false;
+      const v = String(s).trim();
+      return /^https?:\/\//i.test(v);
+    }
+
+    // Minimal CSV parser that handles quoted commas.
+    function parseCsv(text){
+      const rows = [];
+      let row = [];
+      let cur = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++){
+        const ch = text[i];
+        const next = text[i+1];
+
+        if (ch === '"' && inQuotes && next === '"'){ // escaped quote
+          cur += '"';
+          i++;
+          continue;
+        }
+        if (ch === '"'){
+          inQuotes = !inQuotes;
+          continue;
+        }
+        if (ch === "," && !inQuotes){
+          row.push(cur);
+          cur = "";
+          continue;
+        }
+        if ((ch === "\n" || ch === "\r") && !inQuotes){
+          // handle CRLF
+          if (ch === "\r" && next === "\n") i++;
+          row.push(cur);
+          rows.push(row);
+          row = [];
+          cur = "";
+          continue;
+        }
+        cur += ch;
+      }
+      // last cell
+      if (cur.length || row.length){
+        row.push(cur);
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function buildWebsiteLookupFromCsv(csvText){
+      const rows = parseCsv(csvText).filter(r => r.some(c => String(c || "").trim() !== ""));
+      if (rows.length < 2) throw new Error("CSV looks empty.");
+
+      const header = rows[0].map(h => String(h || "").trim());
+      const idx = (name) => header.findIndex(h => h.toLowerCase() === name.toLowerCase());
+
+      const iCode = idx("PARTICIPANT_CODE");
+      const iWebsite = idx("WEBSITE");
+      const iFinal = idx("website_final");
+      const iOfficial = idx("website_official");
+      const iGuess = idx("website_guess");
+
+      if (iCode === -1) throw new Error("CSV missing PARTICIPANT_CODE column.");
+
+      const map = {};
+      for (let r = 1; r < rows.length; r++){
+        const cols = rows[r];
+        const code = String(cols[iCode] || "").trim();
+        if (!code) continue;
+
+        const candidates = [
+          iFinal !== -1 ? cols[iFinal] : "",
+          iWebsite !== -1 ? cols[iWebsite] : "",
+          iOfficial !== -1 ? cols[iOfficial] : "",
+          iGuess !== -1 ? cols[iGuess] : ""
+        ];
+
+        const url = candidates.map(v => String(v || "").trim()).find(isValidUrl);
+        if (url) map[code] = url;
+      }
+      return map;
+    }
+
+    // --- Utilities ---
+    function isZip(s){
+      return /^[0-9]{5}$/.test(s.trim());
+    }
+
+    // Haversine distance in miles
+    function milesBetween(lat1, lon1, lat2, lon2){
+      const R = 3958.7613; // Earth radius in miles
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(lat2-lat1);
+      const dLon = toRad(lon2-lon1);
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+      return 2*R*Math.asin(Math.sqrt(a));
+    }
+
+    // --- ZIP-only geocoding via Zippopotam.us ---
+    async function geocodeZip(zipInput){
+      // Be slightly forgiving: strip non-digits, use first 5
+      const digits = (zipInput || "").replace(/\D/g, "").slice(0,5);
+      if (!isZip(digits)){
+        throw new Error("Enter a valid 5-digit ZIP code (for example, 20001).");
+      }
+
+      const url = `https://api.zippopotam.us/us/${encodeURIComponent(digits)}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("ZIP lookup failed. Try a different ZIP code.");
+
+      const data = await r.json();
+      const place = data.places && data.places[0];
+      if (!place) throw new Error("ZIP lookup returned no location. Try a nearby ZIP code.");
+
+      return {
+        lat: Number(place.latitude),
+        lon: Number(place.longitude),
+        zip: digits,
+        label: `${place["place name"]}, ${place["state abbreviation"]} ${digits}`
+      };
+    }
+
+    // --- Query nearby PHAs (server-side spatial filter) ---
+    async function fetchNearbyPHAs(lat, lon, radiusMiles){
+      const radiusMeters = radiusMiles * 1609.344;
+
+      const params = new URLSearchParams({
+        f: "pjson",
+        where: "1=1",
+        geometry: `${lon},${lat}`,
+        geometryType: "esriGeometryPoint",
+        inSR: "4326",
+        spatialRel: "esriSpatialRelIntersects",
+        distance: String(radiusMeters),
+        units: "esriSRUnit_Meter",
+        outFields: "*",
+        returnGeometry: "true",
+        outSR: "4326",
+        resultRecordCount: "50"
+      });
+
+      const url = `${PHA_QUERY_URL}?${params.toString()}`;
+      const r = await fetch(url);
+      if (!r.ok) {
+        const t = await r.text().catch(()=> "");
+        throw new Error(`PHA service request failed (${r.status}). ${t ? "Response: "+t.slice(0,120) : ""}`.trim());
+      }
+      return r.json();
+    }
+
+    // Basic escaping
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
+    function escapeAttr(s){
+      return String(s).replace(/"/g, "&quot;");
+    }
+
+    // --- Render results (USWDS-style cards) ---
+    function renderResults(allRows){
+      const resultsEl = document.getElementById("results");
+      const countEl = document.getElementById("result-count");
+      resultsEl.innerHTML = "";
+      if (countEl) countEl.textContent = "";
+
+      if (!allRows.length){
+        resultsEl.innerHTML =
+          `<li class="result"><small>No nearby PHAs were found within ${SEARCH_RADIUS_MILES} miles of this ZIP code. Try a nearby ZIP code.</small></li>`;
+        return;
+      }
+
+      const total = allRows.length;
+      const limit = Math.min(total, 10);
+      const toRender = allRows.slice(0, limit);
+
+      const fragment = document.createDocumentFragment();
+
+      for (const row of toRender){
+        const li = document.createElement("li");
+        li.className = "result";
+
+        const name = row.name || "Public Housing Authority";
+        const address = [row.address, row.city, row.state, row.zip].filter(Boolean).join(", ");
+        const website = row.website && isValidUrl(row.website) ? row.website : "";
+
+        const miles = row._distanceMiles;
+        let pillText = "";
+        if (typeof miles === "number" && !Number.isNaN(miles)){
+          if (miles < 0.5){
+            pillText = "< 0.5 mi";
+          } else if (miles < 10){
+            pillText = miles.toFixed(1) + " mi";
+          } else {
+            pillText = Math.round(miles) + " mi";
+          }
+        }
+        const pillHtml = pillText ? `<span class="pill">${pillText}</span>` : "";
+
+        let directionsUrl = "";
+        if (row._lat != null && row._lon != null){
+          directionsUrl = `https://www.google.com/maps/search/?api=1&query=${row._lat},${row._lon}`;
+        } else if (address){
+          const q = encodeURIComponent(name + ", " + address);
+          directionsUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+        }
+
+        li.innerHTML = `
+          <div class="result-header">
+            <div class="result-title">
+              <h3>${escapeHtml(name)}</h3>
+              ${pillHtml}
+            </div>
+            ${address ? `
+              <div class="result-address">
+                ${escapeHtml(address)}
+              </div>
+            ` : ""}
+            ${website ? `
+              <a
+                class="website-btn"
+                href="${escapeAttr(website)}"
+                target="_blank"
+                rel="noopener"
+              >
+                Visit PHA website
+              </a>
+            ` : ""}
+            ${directionsUrl ? `
+              <a
+                class="directions-link"
+                href="${escapeAttr(directionsUrl)}"
+                target="_blank"
+                rel="noopener"
+              >
+                Get directions
+              </a>
+            ` : ""}
+          </div>
+        `;
+
+        fragment.appendChild(li);
+      }
+
+      resultsEl.appendChild(fragment);
+
+      if (countEl){
+        if (limit === total){
+          countEl.textContent =
+            `${total} agencies within ${SEARCH_RADIUS_MILES} miles`;
+        } else {
+          countEl.textContent =
+            `Showing ${limit} of ${total} agencies within ${SEARCH_RADIUS_MILES} miles`;
+        }
+      }
+    }
+
+    // --- Wire up UI ---
+    const csvInput = document.getElementById("csv");
+    const btn = document.getElementById("btn");
+    const input = document.getElementById("q");
+    const meta = document.getElementById("meta");
+    const msg = document.getElementById("msg");
+
+    // --- Load CSV and populate websiteByCode ---
+if (csvInput) {
+  csvInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = reader.result;
+        websiteByCode = buildWebsiteLookupFromCsv(text);
+        console.log(
+          "Loaded website URLs for",
+          Object.keys(websiteByCode).length,
+          "PHAs"
+        );
+
+        // Hide the CSV input after a successful load
+        csvInput.style.display = "none";
+
+      } catch (err) {
+        console.error(err);
+        alert("There was a problem reading the CSV: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+
+
+    async function run(event){
+      if (event) event.preventDefault();
+      msg.innerHTML = "";
+      meta.textContent = "";
+      document.getElementById("results").innerHTML = "";
+      const countEl = document.getElementById("result-count");
+      if (countEl) countEl.textContent = "";
+
+      btn.disabled = true;
+      btn.textContent = "Searching…";
+
+      try{
+        const q = input.value.trim();
+        if (!q) throw new Error("Enter a 5-digit ZIP code (for example, 20001).");
+
+        const loc = await geocodeZip(q);
+        meta.textContent = `Searching near: ${loc.label}`;
+        meta.innerHTML = `Searching near: ${loc.label}<br><br>`;
+
+        const data = await fetchNearbyPHAs(loc.lat, loc.lon, SEARCH_RADIUS_MILES);
+        const features = data?.features || [];
+
+        const rows = features.map(f => {
+          const a = f.attributes || {};
+          const g = f.geometry || {};
+          const lat = g.y ?? g.latitude ?? null;
+          const lon = g.x ?? g.longitude ?? null;
+
+          const obj = {
+            name: a.FORMAL_PARTICIPANT_NAME || "Public Housing Authority",
+            code: a.PARTICIPANT_CODE || null,
+
+            address: a.STD_ADDR || null,
+            city: a.STD_CITY || null,
+            state: a.STD_ST || null,
+            zip: a.STD_ZIP5 || null,
+
+            phone: a.HA_PHN_NUM || null,
+            fax: a.HA_FAX_NUM || null,
+            email: a.HA_EMAIL_ADDR_TEXT || null,
+
+            execPhone: a.EXEC_DIR_PHONE || null,
+            execEmail: a.EXEC_DIR_EMAIL || null,
+
+            website: websiteByCode[a.PARTICIPANT_CODE] || null,
+            _lat: lat,
+            _lon: lon
+          };
+
+          if (obj._lat != null && obj._lon != null){
+            obj._distanceMiles = milesBetween(loc.lat, loc.lon, obj._lat, obj._lon);
+          }
+          return obj;
+        });
+
+        rows.sort((a,b) => (a._distanceMiles ?? 1e9) - (b._distanceMiles ?? 1e9));
+        renderResults(rows);
+
+      }catch(e){
+        msg.innerHTML =
+          `<div class="error"><strong>Couldn’t run search</strong><br/>${escapeHtml(e.message || String(e))}</div>`;
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "Search";
+      }
+    }
+
+    const form = document.getElementById("pha-form");
+    if (form){
+      form.addEventListener("submit", run);
+    }
+    btn.addEventListener("click", run);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter"){
+        run(e);
+      }
+    });
+  </script>
+
+  <!-- USWDS JS (activates certain components) -->
+  <script src="https://cdn.jsdelivr.net/npm/@uswds/uswds@3/dist/js/uswds.min.js"></script>
+</body>
+</html>
